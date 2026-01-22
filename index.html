@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏁 Karting Legends League</title>
+    <title>🏁 EU Karting Cup 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
@@ -13,8 +13,6 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-        .trend-up { color: #22c55e; }
-        .trend-down { color: #ef4444; }
         .loading { animation: pulse 1.5s infinite; }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -26,21 +24,19 @@
 
 <!-- CONFIGURATION - UPDATE THIS -->
 <script>
-    // Replace with your Google Sheet ID (the long string in the URL)
-    // Example: https://docs.google.com/spreadsheets/d/ABC123XYZ/edit → ABC123XYZ
-    const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+    const SHEET_ID = '1XLzkFX2NsoXBOcr-FUtDzbHcLVYQv8uYqtlzyQJluMo';
 
     // Sheet names (tabs at bottom of Google Sheet)
     const DRIVERS_SHEET = 'Drivers';
     const RACES_SHEET = 'Races';
-    const TRASHTALK_SHEET = 'TrashTalk';
+    const NEXTRACES_SHEET = 'Tracks';
 </script>
 
 <div id="app">
     <!-- Header -->
     <div class="text-center mb-8">
         <h1 class="text-4xl font-black bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 bg-clip-text text-transparent mb-2">
-            🏁 KARTING LEGENDS LEAGUE 🏁
+            🏁 EU KARTING CUP 2025 🏁
         </h1>
         <p class="text-gray-400">Where friendships go to die on the track</p>
         <div id="nextRace" class="mt-4 inline-flex items-center gap-2 bg-red-600/20 border border-red-500/50 rounded-full px-6 py-2">
@@ -59,8 +55,8 @@
         <button onclick="showTab('awards')" id="tab-awards" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
             🥇 Awards
         </button>
-        <button onclick="showTab('trash')" id="tab-trash" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
-            🗑️ Trash Talk
+        <button onclick="showTab('nextraces')" id="tab-nextraces" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
+            📅 Next Races
         </button>
     </div>
 
@@ -105,10 +101,9 @@
         <div id="awards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
 
-    <!-- Trash Talk Tab -->
-    <div id="content-trash" class="tab-content hidden max-w-2xl mx-auto">
-        <p class="text-center text-gray-400 mb-4">Add trash talk in the Google Sheet's "TrashTalk" tab!</p>
-        <div id="trash-list" class="space-y-3"></div>
+    <!-- Next Races Tab -->
+    <div id="content-nextraces" class="tab-content hidden max-w-2xl mx-auto">
+        <div id="nextraces-list" class="space-y-4"></div>
     </div>
 
     <!-- Footer -->
@@ -122,7 +117,7 @@
     // Data storage
     let drivers = [];
     let races = [];
-    let trashTalk = [];
+    let nextRaces = [];
 
     // Fetch CSV from Google Sheets
     async function fetchSheet(sheetName) {
@@ -146,7 +141,6 @@
             const obj = {};
             headers.forEach((header, idx) => {
                 let val = values[idx] || '';
-                // Try to convert to number if it looks like one
                 if (/^-?\d+\.?\d*$/.test(val)) {
                     val = parseFloat(val);
                 }
@@ -178,6 +172,41 @@
         return result;
     }
 
+    // Calculate days until a date
+    function daysUntil(dateStr) {
+        if (!dateStr) return NaN;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let raceDate;
+
+        // Try parsing different formats
+        // Format: YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [y, m, d] = dateStr.split('-');
+            raceDate = new Date(y, m - 1, d);
+        }
+        // Format: DD/MM/YYYY or D/M/YYYY
+        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+            const [d, m, y] = dateStr.split('/');
+            raceDate = new Date(y, m - 1, d);
+        }
+        // Format: MM/DD/YYYY
+        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+            raceDate = new Date(dateStr);
+        }
+        // Fallback
+        else {
+            raceDate = new Date(dateStr);
+        }
+
+        if (isNaN(raceDate.getTime())) return NaN;
+
+        const diff = Math.ceil((raceDate - today) / (1000 * 60 * 60 * 24));
+        return diff;
+    }
+
     // Load all data
     async function loadAllData() {
         document.getElementById('loading').classList.remove('hidden');
@@ -196,11 +225,11 @@
                 races = [];
             }
 
-            // Try to load trash talk (optional)
+            // Try to load next races (optional)
             try {
-                trashTalk = await fetchSheet(TRASHTALK_SHEET);
+                nextRaces = await fetchSheet(NEXTRACES_SHEET);
             } catch (e) {
-                trashTalk = [];
+                nextRaces = [];
             }
 
             document.getElementById('loading').classList.add('hidden');
@@ -220,7 +249,24 @@
         renderStandings();
         renderRaces();
         renderAwards();
-        renderTrashTalk();
+        renderNextRaces();
+        updateNextRaceHeader();
+    }
+
+    // Update the header with next race countdown
+    function updateNextRaceHeader() {
+        const header = document.getElementById('nextRace');
+        if (nextRaces.length > 0) {
+            const next = nextRaces[0];
+            const days = daysUntil(next.Date);
+            if (days >= 0) {
+                header.innerHTML = `<span class="text-red-400 font-semibold">🏁 Next Race: ${next.Location || next.RaceName} in ${days} day${days !== 1 ? 's' : ''}</span>`;
+            } else {
+                header.innerHTML = `<span class="text-red-400 font-semibold">🏁 Check the schedule for upcoming races</span>`;
+            }
+        } else {
+            header.innerHTML = `<span class="text-red-400 font-semibold">🏁 No upcoming races scheduled</span>`;
+        }
     }
 
     // Render podium
@@ -238,15 +284,15 @@
         ];
 
         podium.innerHTML = positions.map(p => `
-        <div class="text-center ${p.animate || ''}">
-          <div class="text-4xl mb-2">${p.driver.Emoji || '🏎️'}</div>
-          <div class="${p.height} w-24 ${p.bg} rounded-t-lg flex flex-col items-center justify-end pb-2">
-            <span class="text-2xl font-black text-gray-900">${p.pos}</span>
-            <span class="text-sm font-bold text-gray-900 truncate w-20">${p.driver.Name || 'Unknown'}</span>
-            <span class="text-xs text-gray-800">${p.driver.Points || 0} pts</span>
-          </div>
+      <div class="text-center ${p.animate || ''}">
+        <div class="text-4xl mb-2">${p.driver.Emoji || '🏎️'}</div>
+        <div class="${p.height} w-24 ${p.bg} rounded-t-lg flex flex-col items-center justify-end pb-2">
+          <span class="text-2xl font-black text-gray-900">${p.pos}</span>
+          <span class="text-sm font-bold text-gray-900 truncate w-20">${p.driver.Name || 'Unknown'}</span>
+          <span class="text-xs text-gray-800">${p.driver.Points || 0} pts</span>
         </div>
-      `).join('');
+      </div>
+    `).join('');
     }
 
     // Render standings
@@ -255,20 +301,20 @@
         const colors = ['#e11d48', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b'];
 
         list.innerHTML = drivers.map((d, idx) => `
-        <div class="grid grid-cols-12 gap-2 p-3 items-center hover:bg-gray-700/30 border-b border-gray-700/50">
-          <div class="col-span-1 font-bold" style="color: ${colors[idx % colors.length]}">${idx + 1}</div>
-          <div class="col-span-5 flex items-center gap-2">
-            <span class="text-xl">${d.Emoji || '🏎️'}</span>
-            <div>
-              <div class="font-semibold">${d.Name || 'Unknown'}</div>
-              ${d.Nickname ? `<div class="text-xs text-gray-500">"${d.Nickname}"</div>` : ''}
-            </div>
+      <div class="grid grid-cols-12 gap-2 p-3 items-center hover:bg-gray-700/30 border-b border-gray-700/50">
+        <div class="col-span-1 font-bold" style="color: ${colors[idx % colors.length]}">${idx + 1}</div>
+        <div class="col-span-5 flex items-center gap-2">
+          <span class="text-xl">${d.Emoji || '🏎️'}</span>
+          <div>
+            <div class="font-semibold">${d.Name || 'Unknown'}</div>
+            ${d.Nickname ? `<div class="text-xs text-gray-500">"${d.Nickname}"</div>` : ''}
           </div>
-          <div class="col-span-2 text-center font-bold text-lg">${d.Points || 0}</div>
-          <div class="col-span-2 text-center">${d.Wins || 0}</div>
-          <div class="col-span-2 text-center">${d.Podiums || 0}</div>
         </div>
-      `).join('');
+        <div class="col-span-2 text-center font-bold text-lg">${d.Points || 0}</div>
+        <div class="col-span-2 text-center">${d.Wins || 0}</div>
+        <div class="col-span-2 text-center">${d.Podiums || 0}</div>
+      </div>
+    `).join('');
     }
 
     // Render races
@@ -281,68 +327,61 @@
         }
 
         list.innerHTML = races.map(race => `
-        <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div class="flex justify-between items-center mb-3">
-            <h3 class="text-lg font-bold">${race.RaceName || 'Race'}</h3>
-            <span class="text-sm text-gray-400">${race.Date || ''}</span>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🥇</span>
-              <span class="font-semibold">${race.P1 || '-'}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🥈</span>
-              <span>${race.P2 || '-'}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🥉</span>
-              <span>${race.P3 || '-'}</span>
-            </div>
-            ${race.FastestLap ? `
-              <div class="ml-auto flex items-center gap-2 text-purple-400">
-                <span>⚡</span>
-                <span class="text-sm">${race.FastestLap}</span>
-              </div>
-            ` : ''}
-          </div>
+      <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-lg font-bold">${race.RaceName || 'Race'}</h3>
+          <span class="text-sm text-gray-400">${race.Date || ''}</span>
         </div>
-      `).join('');
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🥇</span>
+            <span class="font-semibold">${race.P1 || '-'}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🥈</span>
+            <span>${race.P2 || '-'}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🥉</span>
+            <span>${race.P3 || '-'}</span>
+          </div>
+          ${race.FastestLap ? `
+            <div class="ml-auto flex items-center gap-2 text-purple-400">
+              <span>⚡</span>
+              <span class="text-sm">${race.FastestLap}</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
     }
 
     // Render awards
     function renderAwards() {
         const list = document.getElementById('awards-list');
-
-        // Calculate awards from data
         const awards = [];
 
         if (drivers.length > 0) {
-            // Most wins
             const mostWins = [...drivers].sort((a, b) => (b.Wins || 0) - (a.Wins || 0))[0];
             if (mostWins.Wins > 0) {
                 awards.push({ title: 'Race Winner', desc: 'Most Wins', winner: mostWins.Name, emoji: '🏆', color: '#eab308' });
             }
 
-            // Most podiums
             const mostPodiums = [...drivers].sort((a, b) => (b.Podiums || 0) - (a.Podiums || 0))[0];
             if (mostPodiums.Podiums > 0) {
                 awards.push({ title: 'Podium King', desc: 'Most Podiums', winner: mostPodiums.Name, emoji: '🎖️', color: '#f97316' });
             }
 
-            // Most fastest laps
             const mostFL = [...drivers].sort((a, b) => (b.FastestLaps || 0) - (a.FastestLaps || 0))[0];
             if (mostFL.FastestLaps > 0) {
                 awards.push({ title: 'Speed Demon', desc: 'Most Fastest Laps', winner: mostFL.Name, emoji: '⚡', color: '#8b5cf6' });
             }
 
-            // Most DNFs (if tracked)
             const mostDNF = [...drivers].sort((a, b) => (b.DNFs || 0) - (a.DNFs || 0))[0];
             if (mostDNF.DNFs > 0) {
                 awards.push({ title: 'Crash King', desc: 'Most DNFs', winner: mostDNF.Name, emoji: '💥', color: '#ef4444' });
             }
 
-            // Points leader
             awards.push({ title: 'Championship Leader', desc: 'Most Points', winner: drivers[0].Name, emoji: '👑', color: '#22c55e' });
         }
 
@@ -352,56 +391,80 @@
         }
 
         list.innerHTML = awards.map(award => `
-        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center transform hover:scale-105 transition-transform">
-          <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
-               style="background-color: ${award.color}20; border: 2px solid ${award.color}">
-            ${award.emoji}
-          </div>
-          <h3 class="text-lg font-bold mb-1">${award.title}</h3>
-          <p class="text-sm text-gray-400 mb-3">${award.desc}</p>
-          <div class="inline-flex items-center gap-2 bg-gray-700/50 rounded-full px-4 py-2">
-            <span>👑</span>
-            <span class="font-semibold">${award.winner}</span>
-          </div>
+      <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center transform hover:scale-105 transition-transform">
+        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
+             style="background-color: ${award.color}20; border: 2px solid ${award.color}">
+          ${award.emoji}
         </div>
-      `).join('');
+        <h3 class="text-lg font-bold mb-1">${award.title}</h3>
+        <p class="text-sm text-gray-400 mb-3">${award.desc}</p>
+        <div class="inline-flex items-center gap-2 bg-gray-700/50 rounded-full px-4 py-2">
+          <span>👑</span>
+          <span class="font-semibold">${award.winner}</span>
+        </div>
+      </div>
+    `).join('');
     }
 
-    // Render trash talk
-    function renderTrashTalk() {
-        const list = document.getElementById('trash-list');
+    // Render next races
+    function renderNextRaces() {
+        const list = document.getElementById('nextraces-list');
 
-        if (trashTalk.length === 0) {
-            list.innerHTML = '<p class="text-center text-gray-400">No trash talk yet. Add some in the Google Sheet!</p>';
+        if (nextRaces.length === 0) {
+            list.innerHTML = '<p class="text-center text-gray-400">No upcoming races. Add them in the "NextRaces" sheet!</p>';
             return;
         }
 
-        list.innerHTML = trashTalk.map(msg => `
-        <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-bold text-red-400">${msg.Author || 'Anonymous'}</span>
-            <span class="text-xs text-gray-500">${msg.Date || ''}</span>
+        list.innerHTML = nextRaces.map(race => {
+            const days = daysUntil(race.Date);
+            let countdown = '';
+            let urgencyClass = 'text-gray-400';
+
+            if (isNaN(days)) {
+                countdown = race.Date || 'Date TBD';
+                urgencyClass = 'text-gray-500';
+            } else if (days < 0) {
+                countdown = 'Completed';
+                urgencyClass = 'text-gray-500';
+            } else if (days === 0) {
+                countdown = '🔴 TODAY!';
+                urgencyClass = 'text-red-500 font-bold';
+            } else if (days <= 7) {
+                countdown = `${days} day${days !== 1 ? 's' : ''} away`;
+                urgencyClass = 'text-yellow-500';
+            } else {
+                countdown = `${days} days away`;
+            }
+
+            return `
+        <div class="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 class="text-xl font-bold">${race.RaceName || 'Race'}</h3>
+              <p class="text-gray-400">${race.Location || ''}</p>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-400">${race.Date || ''}</div>
+              <div class="${urgencyClass}">${countdown}</div>
+            </div>
           </div>
-          <p class="text-gray-300">${msg.Message || ''}</p>
+          ${race.Price ? `<div class="text-sm text-green-400 mb-1">💰 ${race.Price}</div>` : ''}
+          ${race.Time ? `<div class="text-sm text-gray-500">🕐 ${race.Time}</div>` : ''}
+          ${race.Notes ? `<div class="mt-2 text-sm text-gray-400 italic">${race.Notes}</div>` : ''}
         </div>
-      `).join('');
+      `;
+        }).join('');
     }
 
     // Tab switching
     function showTab(tabName) {
-        // Hide all content
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-
-        // Deactivate all tabs
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('bg-red-600');
             btn.classList.add('bg-gray-700/50');
         });
 
-        // Show selected content
         document.getElementById(`content-${tabName}`).classList.remove('hidden');
-
-        // Activate selected tab
         document.getElementById(`tab-${tabName}`).classList.remove('bg-gray-700/50');
         document.getElementById(`tab-${tabName}`).classList.add('bg-red-600');
     }
