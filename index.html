@@ -4,112 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏁 EU Karting Cup 2025</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .podium-1 { animation: bounce 2s infinite; }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        .loading { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4">
+<body>
 
-<!-- CONFIGURATION - UPDATE THIS -->
+<!-- Configuration -->
 <script>
     const SHEET_ID = '1XLzkFX2NsoXBOcr-FUtDzbHcLVYQv8uYqtlzyQJluMo';
-
-    // Sheet names (tabs at bottom of Google Sheet)
     const DRIVERS_SHEET = 'Drivers';
     const RACES_SHEET = 'Races';
-    const NEXTRACES_SHEET = 'Tracks';
+    const NEXTRACES_SHEET = 'NextRaces';
+    const RESULTS_SHEET = 'Results';
 </script>
 
 <div id="app">
     <!-- Header -->
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-black bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 bg-clip-text text-transparent mb-2">
-            🏁 EU KARTING CUP 2025 🏁
-        </h1>
-        <p class="text-gray-400">Where friendships go to die on the track</p>
-        <div id="nextRace" class="mt-4 inline-flex items-center gap-2 bg-red-600/20 border border-red-500/50 rounded-full px-6 py-2">
-            <span class="text-red-400 font-semibold">Loading next race...</span>
+    <div class="header">
+        <img src="logo.png" alt="EU Karting Cup" class="logo">
+        <p class="subtitle">Where friendships go to die on the track</p>
+        <div id="nextRace" class="next-race-badge">
+            Loading next race...
         </div>
     </div>
 
     <!-- Navigation -->
-    <div class="flex flex-wrap justify-center gap-2 mb-6">
-        <button onclick="showTab('standings')" id="tab-standings" class="tab-btn active flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-red-600">
-            🏆 Standings
-        </button>
-        <button onclick="showTab('races')" id="tab-races" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
-            🏎️ Races
-        </button>
-        <button onclick="showTab('awards')" id="tab-awards" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
-            🥇 Awards
-        </button>
-        <button onclick="showTab('nextraces')" id="tab-nextraces" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
-            📅 Next Races
-        </button>
+    <div class="nav">
+        <button onclick="showTab('standings')" id="tab-standings" class="nav-btn active">🏆 Standings</button>
+        <button onclick="showTab('stats')" id="tab-stats" class="nav-btn">📊 Stats</button>
+        <button onclick="showTab('races')" id="tab-races" class="nav-btn">🏎️ Races</button>
+        <button onclick="showTab('awards')" id="tab-awards" class="nav-btn">🥇 Awards</button>
+        <button onclick="showTab('nextraces')" id="tab-nextraces" class="nav-btn">📅 Calendar</button>
     </div>
 
     <!-- Loading State -->
-    <div id="loading" class="text-center py-12">
-        <div class="text-4xl mb-4 loading">🏎️</div>
-        <p class="text-gray-400">Loading data from Google Sheets...</p>
+    <div id="loading" class="loading">
+        <div class="spinner">🏎️</div>
+        <p>Loading data...</p>
     </div>
 
     <!-- Error State -->
-    <div id="error" class="hidden text-center py-12">
-        <div class="text-4xl mb-4">⚠️</div>
-        <p class="text-red-400 mb-2">Couldn't load data from Google Sheets</p>
-        <p class="text-gray-500 text-sm">Make sure you've updated the SHEET_ID and published the sheet</p>
+    <div id="error" class="error hidden">
+        <div class="icon">⚠️</div>
+        <p>Couldn't load data from Google Sheets</p>
+        <p class="hint">Make sure you've published the sheet</p>
     </div>
 
     <!-- Standings Tab -->
-    <div id="content-standings" class="tab-content hidden max-w-4xl mx-auto">
-        <!-- Podium -->
-        <div id="podium" class="flex justify-center items-end gap-4 mb-8 h-48"></div>
-
-        <!-- Standings Table -->
-        <div class="bg-gray-800/50 rounded-xl overflow-hidden border border-gray-700">
-            <div class="grid grid-cols-12 gap-2 p-3 bg-gray-700/50 text-sm font-semibold text-gray-400">
-                <div class="col-span-1">#</div>
-                <div class="col-span-5">Driver</div>
-                <div class="col-span-2 text-center">Points</div>
-                <div class="col-span-2 text-center">Wins</div>
-                <div class="col-span-2 text-center">Podiums</div>
+    <div id="content-standings" class="tab-content">
+        <div id="podium" class="podium"></div>
+        <div class="standings-table">
+            <div class="standings-header">
+                <div>#</div>
+                <div>Driver</div>
+                <div class="text-center">Points</div>
+                <div class="text-center">Wins</div>
+                <div class="text-center">Podiums</div>
             </div>
             <div id="standings-list"></div>
         </div>
     </div>
 
+    <!-- Stats Tab -->
+    <div id="content-stats" class="tab-content">
+        <div class="chart-container">
+            <h2>📈 Championship Progression</h2>
+            <canvas id="progressionChart"></canvas>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+    </div>
+
     <!-- Races Tab -->
-    <div id="content-races" class="tab-content hidden max-w-4xl mx-auto">
-        <div id="races-list" class="space-y-4"></div>
+    <div id="content-races" class="tab-content">
+        <div id="races-list"></div>
     </div>
 
     <!-- Awards Tab -->
-    <div id="content-awards" class="tab-content hidden max-w-4xl mx-auto">
-        <div id="awards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div id="content-awards" class="tab-content">
+        <div id="awards-list" class="awards-grid"></div>
     </div>
 
     <!-- Next Races Tab -->
-    <div id="content-nextraces" class="tab-content hidden max-w-2xl mx-auto">
-        <div id="nextraces-list" class="space-y-4"></div>
+    <div id="content-nextraces" class="tab-content">
+        <div id="nextraces-list"></div>
     </div>
 
     <!-- Footer -->
-    <div class="text-center mt-12 text-gray-500 text-sm">
-        <p>🏎️ May the fastest friend win (and the slowest buy drinks) 🍺</p>
-        <button onclick="loadAllData()" class="mt-2 text-xs text-gray-600 hover:text-gray-400">↻ Refresh Data</button>
+    <div class="footer">
+        <img src="logo.png" alt="EU Karting Cup" class="logo-small">
+        <p>May the fastest friend win (and the slowest buy drinks) 🍺</p>
+        <button onclick="loadAllData()" class="refresh">↻ Refresh Data</button>
     </div>
 </div>
 
@@ -118,6 +102,18 @@
     let drivers = [];
     let races = [];
     let nextRaces = [];
+    let results = [];
+    let chart = null;
+
+    // Points system
+    const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+
+    // Driver colors for chart (brand-inspired)
+    const DRIVER_COLORS = [
+        '#EF8354', '#4F5D75', '#3B82F6', '#22C55E', '#F59E0B',
+        '#EC4899', '#8B5CF6', '#06B6D4', '#EF4444', '#84CC16',
+        '#F97316', '#14B8A6', '#6366F1', '#D946EF'
+    ];
 
     // Fetch CSV from Google Sheets
     async function fetchSheet(sheetName) {
@@ -132,18 +128,14 @@
     function parseCSV(csv) {
         const lines = csv.split('\n').filter(line => line.trim());
         if (lines.length < 2) return [];
-
         const headers = parseCSVLine(lines[0]);
         const data = [];
-
         for (let i = 1; i < lines.length; i++) {
             const values = parseCSVLine(lines[i]);
             const obj = {};
             headers.forEach((header, idx) => {
                 let val = values[idx] || '';
-                if (/^-?\d+\.?\d*$/.test(val)) {
-                    val = parseFloat(val);
-                }
+                if (/^-?\d+\.?\d*$/.test(val)) val = parseFloat(val);
                 obj[header.trim()] = val;
             });
             data.push(obj);
@@ -151,91 +143,58 @@
         return data;
     }
 
-    // Parse a single CSV line (handles quoted values)
     function parseCSVLine(line) {
         const result = [];
         let current = '';
         let inQuotes = false;
-
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === ',' && !inQuotes) {
                 result.push(current.trim());
                 current = '';
-            } else {
-                current += char;
-            }
+            } else current += char;
         }
         result.push(current.trim());
         return result;
     }
 
-    // Calculate days until a date
+    // Calculate days until date
     function daysUntil(dateStr) {
         if (!dateStr) return NaN;
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         let raceDate;
-
-        // Try parsing different formats
-        // Format: YYYY-MM-DD
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
             const [y, m, d] = dateStr.split('-');
             raceDate = new Date(y, m - 1, d);
-        }
-        // Format: DD/MM/YYYY or D/M/YYYY
-        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+        } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
             const [d, m, y] = dateStr.split('/');
             raceDate = new Date(y, m - 1, d);
-        }
-        // Format: MM/DD/YYYY
-        else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+        } else {
             raceDate = new Date(dateStr);
         }
-        // Fallback
-        else {
-            raceDate = new Date(dateStr);
-        }
-
         if (isNaN(raceDate.getTime())) return NaN;
-
-        const diff = Math.ceil((raceDate - today) / (1000 * 60 * 60 * 24));
-        return diff;
+        return Math.ceil((raceDate - today) / (1000 * 60 * 60 * 24));
     }
 
     // Load all data
     async function loadAllData() {
         document.getElementById('loading').classList.remove('hidden');
         document.getElementById('error').classList.add('hidden');
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
 
         try {
-            // Load drivers
             drivers = await fetchSheet(DRIVERS_SHEET);
             drivers.sort((a, b) => (b.Points || 0) - (a.Points || 0));
 
-            // Try to load races (optional)
-            try {
-                races = await fetchSheet(RACES_SHEET);
-            } catch (e) {
-                races = [];
-            }
-
-            // Try to load next races (optional)
-            try {
-                nextRaces = await fetchSheet(NEXTRACES_SHEET);
-            } catch (e) {
-                nextRaces = [];
-            }
+            try { races = await fetchSheet(RACES_SHEET); } catch (e) { races = []; }
+            try { nextRaces = await fetchSheet(NEXTRACES_SHEET); } catch (e) { nextRaces = []; }
+            try { results = await fetchSheet(RESULTS_SHEET); } catch (e) { results = []; }
 
             document.getElementById('loading').classList.add('hidden');
             renderAll();
             showTab('standings');
-
         } catch (err) {
             console.error(err);
             document.getElementById('loading').classList.add('hidden');
@@ -243,230 +202,281 @@
         }
     }
 
-    // Render all sections
     function renderAll() {
         renderPodium();
         renderStandings();
         renderRaces();
         renderAwards();
         renderNextRaces();
+        renderStats();
         updateNextRaceHeader();
     }
 
-    // Update the header with next race countdown
     function updateNextRaceHeader() {
         const header = document.getElementById('nextRace');
         if (nextRaces.length > 0) {
             const next = nextRaces[0];
             const days = daysUntil(next.Date);
-            if (days >= 0) {
-                header.innerHTML = `<span class="text-red-400 font-semibold">🏁 Next Race: ${next.Location || next.RaceName} in ${days} day${days !== 1 ? 's' : ''}</span>`;
+            if (!isNaN(days) && days >= 0) {
+                header.innerHTML = `🏁 Next Race: ${next.Location || next.RaceName} in ${days} day${days !== 1 ? 's' : ''}`;
             } else {
-                header.innerHTML = `<span class="text-red-400 font-semibold">🏁 Check the schedule for upcoming races</span>`;
+                header.innerHTML = '🏁 Check calendar for upcoming races';
             }
         } else {
-            header.innerHTML = `<span class="text-red-400 font-semibold">🏁 No upcoming races scheduled</span>`;
+            header.innerHTML = '🏁 No upcoming races scheduled';
         }
     }
 
-    // Render podium
     function renderPodium() {
         const podium = document.getElementById('podium');
         if (drivers.length < 3) {
-            podium.innerHTML = '<p class="text-gray-400">Need at least 3 drivers for podium</p>';
+            podium.innerHTML = '<p style="color:#9ca3af">Need at least 3 drivers</p>';
             return;
         }
-
-        const positions = [
-            { driver: drivers[1], height: 'h-32', pos: '2nd', bg: 'bg-gray-400' },
-            { driver: drivers[0], height: 'h-40', pos: '1st', bg: 'bg-yellow-500', animate: 'podium-1' },
-            { driver: drivers[2], height: 'h-24', pos: '3rd', bg: 'bg-amber-700' },
+        const pos = [
+            { d: drivers[1], cls: 'silver', p: '2nd' },
+            { d: drivers[0], cls: 'gold first', p: '1st' },
+            { d: drivers[2], cls: 'bronze', p: '3rd' }
         ];
-
-        podium.innerHTML = positions.map(p => `
-      <div class="text-center ${p.animate || ''}">
-        <div class="text-4xl mb-2">${p.driver.Emoji || '🏎️'}</div>
-        <div class="${p.height} w-24 ${p.bg} rounded-t-lg flex flex-col items-center justify-end pb-2">
-          <span class="text-2xl font-black text-gray-900">${p.pos}</span>
-          <span class="text-sm font-bold text-gray-900 truncate w-20">${p.driver.Name || 'Unknown'}</span>
-          <span class="text-xs text-gray-800">${p.driver.Points || 0} pts</span>
+        podium.innerHTML = pos.map(x => `
+      <div class="podium-place ${x.cls.includes('first') ? 'first' : ''}">
+        <div class="emoji">${x.d.Emoji || '🏎️'}</div>
+        <div class="podium-stand ${x.cls.split(' ')[0]}">
+          <span class="position">${x.p}</span>
+          <span class="name">${x.d.Name || 'Unknown'}</span>
+          <span class="points">${x.d.Points || 0} pts</span>
         </div>
       </div>
     `).join('');
     }
 
-    // Render standings
     function renderStandings() {
         const list = document.getElementById('standings-list');
-        const colors = ['#e11d48', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b'];
-
-        list.innerHTML = drivers.map((d, idx) => `
-      <div class="grid grid-cols-12 gap-2 p-3 items-center hover:bg-gray-700/30 border-b border-gray-700/50">
-        <div class="col-span-1 font-bold" style="color: ${colors[idx % colors.length]}">${idx + 1}</div>
-        <div class="col-span-5 flex items-center gap-2">
-          <span class="text-xl">${d.Emoji || '🏎️'}</span>
+        list.innerHTML = drivers.map((d, i) => `
+      <div class="standings-row">
+        <div class="pos" style="color:${DRIVER_COLORS[i % DRIVER_COLORS.length]}">${i + 1}</div>
+        <div class="driver">
+          <span class="emoji">${d.Emoji || '🏎️'}</span>
           <div>
-            <div class="font-semibold">${d.Name || 'Unknown'}</div>
-            ${d.Nickname ? `<div class="text-xs text-gray-500">"${d.Nickname}"</div>` : ''}
+            <div class="name">${d.Name || 'Unknown'}</div>
+            ${d.Nickname ? `<div class="nickname">"${d.Nickname}"</div>` : ''}
           </div>
         </div>
-        <div class="col-span-2 text-center font-bold text-lg">${d.Points || 0}</div>
-        <div class="col-span-2 text-center">${d.Wins || 0}</div>
-        <div class="col-span-2 text-center">${d.Podiums || 0}</div>
+        <div class="points">${d.Points || 0}</div>
+        <div class="wins">${d.Wins || 0}</div>
+        <div class="podiums">${d.Podiums || 0}</div>
       </div>
     `).join('');
     }
 
-    // Render races
     function renderRaces() {
         const list = document.getElementById('races-list');
-
         if (races.length === 0) {
-            list.innerHTML = '<p class="text-center text-gray-400">No races yet. Add them in the "Races" sheet!</p>';
+            list.innerHTML = '<p class="text-center" style="color:#9ca3af">No races yet</p>';
             return;
         }
-
-        list.innerHTML = races.map(race => `
-      <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-bold">${race.RaceName || 'Race'}</h3>
-          <span class="text-sm text-gray-400">${race.Date || ''}</span>
+        list.innerHTML = races.map(r => `
+      <div class="race-card">
+        <div class="header">
+          <h3>${r.RaceName || 'Race'}</h3>
+          <span class="date">${r.Date || ''}</span>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🥇</span>
-            <span class="font-semibold">${race.P1 || '-'}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🥈</span>
-            <span>${race.P2 || '-'}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🥉</span>
-            <span>${race.P3 || '-'}</span>
-          </div>
-          ${race.FastestLap ? `
-            <div class="ml-auto flex items-center gap-2 text-purple-400">
-              <span>⚡</span>
-              <span class="text-sm">${race.FastestLap}</span>
-            </div>
-          ` : ''}
+        <div class="results">
+          <div class="result first"><span class="medal">🥇</span><span class="name">${r.P1 || '-'}</span></div>
+          <div class="result"><span class="medal">🥈</span><span>${r.P2 || '-'}</span></div>
+          <div class="result"><span class="medal">🥉</span><span>${r.P3 || '-'}</span></div>
+          ${r.FastestLap ? `<div class="fastest-lap">⚡ ${r.FastestLap}</div>` : ''}
         </div>
       </div>
     `).join('');
     }
 
-    // Render awards
     function renderAwards() {
         const list = document.getElementById('awards-list');
         const awards = [];
-
         if (drivers.length > 0) {
             const mostWins = [...drivers].sort((a, b) => (b.Wins || 0) - (a.Wins || 0))[0];
-            if (mostWins.Wins > 0) {
-                awards.push({ title: 'Race Winner', desc: 'Most Wins', winner: mostWins.Name, emoji: '🏆', color: '#eab308' });
-            }
+            if (mostWins.Wins > 0) awards.push({ title: 'Race Winner', desc: 'Most Wins', winner: mostWins.Name, emoji: '🏆', color: '#eab308' });
 
             const mostPodiums = [...drivers].sort((a, b) => (b.Podiums || 0) - (a.Podiums || 0))[0];
-            if (mostPodiums.Podiums > 0) {
-                awards.push({ title: 'Podium King', desc: 'Most Podiums', winner: mostPodiums.Name, emoji: '🎖️', color: '#f97316' });
-            }
+            if (mostPodiums.Podiums > 0) awards.push({ title: 'Podium King', desc: 'Most Podiums', winner: mostPodiums.Name, emoji: '🎖️', color: '#f97316' });
 
             const mostFL = [...drivers].sort((a, b) => (b.FastestLaps || 0) - (a.FastestLaps || 0))[0];
-            if (mostFL.FastestLaps > 0) {
-                awards.push({ title: 'Speed Demon', desc: 'Most Fastest Laps', winner: mostFL.Name, emoji: '⚡', color: '#8b5cf6' });
-            }
+            if (mostFL.FastestLaps > 0) awards.push({ title: 'Speed Demon', desc: 'Most Fastest Laps', winner: mostFL.Name, emoji: '⚡', color: '#8b5cf6' });
 
             const mostDNF = [...drivers].sort((a, b) => (b.DNFs || 0) - (a.DNFs || 0))[0];
-            if (mostDNF.DNFs > 0) {
-                awards.push({ title: 'Crash King', desc: 'Most DNFs', winner: mostDNF.Name, emoji: '💥', color: '#ef4444' });
-            }
+            if (mostDNF.DNFs > 0) awards.push({ title: 'Crash King', desc: 'Most DNFs', winner: mostDNF.Name, emoji: '💥', color: '#ef4444' });
 
             awards.push({ title: 'Championship Leader', desc: 'Most Points', winner: drivers[0].Name, emoji: '👑', color: '#22c55e' });
         }
-
         if (awards.length === 0) {
-            list.innerHTML = '<p class="text-center text-gray-400 col-span-3">Awards will appear as you add race data!</p>';
+            list.innerHTML = '<p class="text-center" style="color:#9ca3af">Awards will appear after races</p>';
             return;
         }
-
-        list.innerHTML = awards.map(award => `
-      <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center transform hover:scale-105 transition-transform">
-        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
-             style="background-color: ${award.color}20; border: 2px solid ${award.color}">
-          ${award.emoji}
-        </div>
-        <h3 class="text-lg font-bold mb-1">${award.title}</h3>
-        <p class="text-sm text-gray-400 mb-3">${award.desc}</p>
-        <div class="inline-flex items-center gap-2 bg-gray-700/50 rounded-full px-4 py-2">
-          <span>👑</span>
-          <span class="font-semibold">${award.winner}</span>
-        </div>
+        list.innerHTML = awards.map(a => `
+      <div class="award-card">
+        <div class="icon" style="background:${a.color}20;border:2px solid ${a.color}">${a.emoji}</div>
+        <div class="title">${a.title}</div>
+        <div class="desc">${a.desc}</div>
+        <div class="winner">👑 ${a.winner}</div>
       </div>
     `).join('');
     }
 
-    // Render next races
     function renderNextRaces() {
         const list = document.getElementById('nextraces-list');
-
         if (nextRaces.length === 0) {
-            list.innerHTML = '<p class="text-center text-gray-400">No upcoming races. Add them in the "NextRaces" sheet!</p>';
+            list.innerHTML = '<p class="text-center" style="color:#9ca3af">No upcoming races</p>';
             return;
         }
-
-        list.innerHTML = nextRaces.map(race => {
-            const days = daysUntil(race.Date);
-            let countdown = '';
-            let urgencyClass = 'text-gray-400';
-
-            if (isNaN(days)) {
-                countdown = race.Date || 'Date TBD';
-                urgencyClass = 'text-gray-500';
-            } else if (days < 0) {
-                countdown = 'Completed';
-                urgencyClass = 'text-gray-500';
-            } else if (days === 0) {
-                countdown = '🔴 TODAY!';
-                urgencyClass = 'text-red-500 font-bold';
-            } else if (days <= 7) {
-                countdown = `${days} day${days !== 1 ? 's' : ''} away`;
-                urgencyClass = 'text-yellow-500';
-            } else {
-                countdown = `${days} days away`;
-            }
-
+        list.innerHTML = nextRaces.map(r => {
+            const days = daysUntil(r.Date);
+            let countdown = '', cls = '';
+            if (isNaN(days)) { countdown = r.Date || 'TBD'; }
+            else if (days < 0) { countdown = 'Completed'; cls = ''; }
+            else if (days === 0) { countdown = '🔴 TODAY!'; cls = 'today'; }
+            else if (days <= 7) { countdown = `${days} day${days !== 1 ? 's' : ''} away`; cls = 'soon'; }
+            else { countdown = `${days} days away`; }
             return `
-        <div class="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
-          <div class="flex justify-between items-start mb-3">
+        <div class="next-race-card">
+          <div class="top">
             <div>
-              <h3 class="text-xl font-bold">${race.RaceName || 'Race'}</h3>
-              <p class="text-gray-400">${race.Location || ''}</p>
+              <div class="name">${r.RaceName || 'Race'}</div>
+              <div class="location">${r.Location || ''}</div>
             </div>
-            <div class="text-right">
-              <div class="text-sm text-gray-400">${race.Date || ''}</div>
-              <div class="${urgencyClass}">${countdown}</div>
+            <div>
+              <div class="date">${r.Date || ''}</div>
+              <div class="countdown ${cls}">${countdown}</div>
             </div>
           </div>
-          ${race.Price ? `<div class="text-sm text-green-400 mb-1">💰 ${race.Price}</div>` : ''}
-          ${race.Time ? `<div class="text-sm text-gray-500">🕐 ${race.Time}</div>` : ''}
-          ${race.Notes ? `<div class="mt-2 text-sm text-gray-400 italic">${race.Notes}</div>` : ''}
+          ${r.Price ? `<div class="price">💰 ${r.Price}</div>` : ''}
+          ${r.Time ? `<div class="time">🕐 ${r.Time}</div>` : ''}
+          ${r.Notes ? `<div class="notes">${r.Notes}</div>` : ''}
         </div>
       `;
         }).join('');
     }
 
-    // Tab switching
-    function showTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('bg-red-600');
-            btn.classList.add('bg-gray-700/50');
+    function renderStats() {
+        // Season stats
+        const grid = document.getElementById('stats-grid');
+        const totalRaces = results.length || 0;
+        const totalDrivers = drivers.length;
+
+        grid.innerHTML = `
+      <div class="stat-card"><div class="icon">🏁</div><div class="value">${totalRaces}</div><div class="label">Races</div></div>
+      <div class="stat-card"><div class="icon">👥</div><div class="value">${totalDrivers}</div><div class="label">Drivers</div></div>
+      <div class="stat-card"><div class="icon">🏆</div><div class="value">${drivers[0]?.Name || '-'}</div><div class="label">Leader</div></div>
+      <div class="stat-card"><div class="icon">📊</div><div class="value">${drivers[0]?.Points || 0}</div><div class="label">Top Points</div></div>
+    `;
+
+        // Chart
+        renderChart();
+    }
+
+    function renderChart() {
+        if (!results || results.length === 0) {
+            document.getElementById('progressionChart').parentElement.innerHTML = '<p class="text-center" style="color:#9ca3af;padding:2rem;">Add race results to see the chart</p>';
+            return;
+        }
+
+        const ctx = document.getElementById('progressionChart').getContext('2d');
+
+        // Calculate points per driver per race from Results sheet
+        const raceNames = results.map(r => r.Race);
+        const driverPoints = {};
+
+        // Initialize all drivers
+        drivers.forEach(d => {
+            driverPoints[d.Name] = [];
         });
 
-        document.getElementById(`content-${tabName}`).classList.remove('hidden');
-        document.getElementById(`tab-${tabName}`).classList.remove('bg-gray-700/50');
-        document.getElementById(`tab-${tabName}`).classList.add('bg-red-600');
+        // Calculate points for each race
+        results.forEach(race => {
+            // Get positions P1-P13 (or however many)
+            const positions = [];
+            for (let i = 1; i <= 20; i++) {
+                const pos = race[`P${i}`];
+                if (pos && pos.trim()) positions.push(pos.trim());
+            }
+
+            // Assign points
+            const racePoints = {};
+            positions.forEach((driverName, idx) => {
+                const pts = idx < POINTS.length ? POINTS[idx] : 0;
+                racePoints[driverName] = pts;
+            });
+
+            // Add fastest lap bonus (+1 if in top 10)
+            if (race.FastestLap && racePoints[race.FastestLap] !== undefined) {
+                racePoints[race.FastestLap] += 1;
+            }
+
+            // Add to each driver's array
+            Object.keys(driverPoints).forEach(name => {
+                driverPoints[name].push(racePoints[name] || 0);
+            });
+        });
+
+        // Calculate cumulative points and sort by total
+        const driverTotals = Object.entries(driverPoints).map(([name, pts]) => ({
+            name,
+            points: pts,
+            total: pts.reduce((a, b) => a + b, 0)
+        })).sort((a, b) => b.total - a.total);
+
+        // Only show top 8 in chart
+        const topDrivers = driverTotals.slice(0, 8);
+
+        const datasets = topDrivers.map((driver, i) => {
+            const cumulative = [];
+            let total = 0;
+            driver.points.forEach(p => {
+                total += p;
+                cumulative.push(total);
+            });
+
+            return {
+                label: driver.name,
+                data: cumulative,
+                borderColor: DRIVER_COLORS[i],
+                backgroundColor: DRIVER_COLORS[i],
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            };
+        });
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: raceNames,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#9ca3af', usePointStyle: true }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                    y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`content-${tabName}`).classList.add('active');
+        document.getElementById(`tab-${tabName}`).classList.add('active');
     }
 
     // Initialize

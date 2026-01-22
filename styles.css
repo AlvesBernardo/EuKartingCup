@@ -1,0 +1,576 @@
+/* ================================
+   EU KARTING CUP 2025 - STYLES
+   Brand Colors:
+   - Dark Blue: #2D3142
+   - Slate Blue: #4F5D75
+   - Gray: #BFC0C0
+   - Orange: #EF8354
+   - White: #FFFFFF
+   ================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+:root {
+    --dark-blue: #2D3142;
+    --slate-blue: #4F5D75;
+    --light-blue: #eef1f7;
+    --gray: #9aa0a6;
+    --orange: #EF8354;
+    --white: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background: #f4f6fb; /* soft off-white */
+    color: var(--dark-blue);
+    padding: 1rem;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.header .logo {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: 0.5rem;
+}
+
+.header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+}
+
+.header h1 .orange {
+    color: var(--orange);
+}
+
+.header .subtitle {
+    color: var(--gray);
+}
+
+.next-race-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: rgba(239, 131, 84, 0.2);
+    border: 1px solid var(--orange);
+    border-radius: 9999px;
+    color: var(--orange);
+    font-weight: 600;
+}
+
+/* Navigation */
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    background: var(--slate-blue);
+    color: var(--white);
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: var(--orange);
+}
+
+.nav-btn.active {
+    background: var(--orange);
+    color: var(--white);
+}
+
+/* Loading & Error */
+.loading, .error {
+    text-align: center;
+    padding: 3rem;
+}
+
+.loading .spinner {
+    font-size: 2.5rem;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.error .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.error p {
+    color: var(--orange);
+}
+
+.error .hint {
+    color: var(--gray);
+    font-size: 0.875rem;
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+    max-width: 56rem;
+    margin: 0 auto;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Podium */
+.podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1rem;
+    height: 12rem;
+    margin-bottom: 2rem;
+}
+
+.podium-place {
+    text-align: center;
+}
+
+.podium-place.first {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.podium-place .emoji {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.podium-stand {
+    width: 6rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 0.5rem;
+}
+
+.podium-stand.gold {
+    height: 10rem;
+    background: linear-gradient(135deg, #FFD700, var(--orange));
+}
+
+.podium-stand.silver {
+    height: 8rem;
+    background: linear-gradient(135deg, var(--gray), #a8a8a8);
+}
+
+.podium-stand.bronze {
+    height: 6rem;
+    background: linear-gradient(135deg, #CD7F32, #8B4513);
+}
+
+.podium-stand .position {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--dark-blue);
+}
+
+.podium-stand .name {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--dark-blue);
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.podium-stand .points {
+    font-size: 0.75rem;
+    color: var(--dark-blue);
+}
+
+/* Standings Table */
+.standings-table {
+    background: var(--white);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 8px 24px rgba(45, 49, 66, 0.08);
+}
+
+
+.standings-header {
+    display: grid;
+    grid-template-columns: 1fr 5fr 2fr 2fr 2fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--slate-blue);
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--slate-blue);
+    color: var(--white);
+}
+
+.standings-row {
+    display: grid;
+    grid-template-columns: 1fr 5fr 2fr 2fr 2fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    align-items: center;
+    border-bottom: 1px solid rgba(79, 93, 117, 0.5);
+    transition: background 0.2s;
+}
+
+.standings-row:hover {
+    background: rgba(79, 93, 117, 0.3);
+}
+
+.standings-row .pos {
+    font-weight: 700;
+}
+
+.standings-row .driver {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.standings-row .driver .emoji {
+    font-size: 1.25rem;
+}
+
+.standings-row .driver .name {
+    font-weight: 600;
+}
+
+.standings-row .driver .nickname {
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+.standings-row .points {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--orange);
+}
+
+.standings-row .wins,
+.standings-row .podiums {
+    text-align: center;
+}
+
+/* Race Cards */
+.race-card {
+    background: rgba(79, 93, 117, 0.3);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--slate-blue);
+    margin-bottom: 1rem;
+}
+
+.race-card .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.race-card .header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.race-card .header .date {
+    font-size: 0.875rem;
+    color: var(--gray);
+}
+
+.race-card .results {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.race-card .result {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.race-card .result .medal {
+    font-size: 1.5rem;
+}
+
+.race-card .result.first .name {
+    font-weight: 600;
+}
+
+.race-card .fastest-lap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--orange);
+    font-size: 0.875rem;
+}
+
+/* Awards */
+.awards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.award-card {
+    background: rgba(79, 93, 117, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--slate-blue);
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.award-card:hover {
+    transform: scale(1.05);
+    border-color: var(--orange);
+}
+
+.award-card .icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.award-card .title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.award-card .desc {
+    font-size: 0.875rem;
+    color: var(--gray);
+    margin-bottom: 0.75rem;
+}
+
+.award-card .winner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--slate-blue);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+/* Next Races */
+.next-race-card {
+    background: rgba(79, 93, 117, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    border: 1px solid var(--slate-blue);
+    margin-bottom: 1rem;
+}
+
+.next-race-card .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.next-race-card .name {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.next-race-card .location {
+    color: var(--gray);
+}
+
+.next-race-card .date {
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--gray);
+}
+
+.next-race-card .countdown {
+    color: var(--gray);
+}
+
+.next-race-card .countdown.soon {
+    color: var(--orange);
+}
+
+.next-race-card .countdown.today {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.next-race-card .price {
+    color: #4ade80;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.next-race-card .time {
+    color: var(--gray);
+    font-size: 0.875rem;
+}
+
+.next-race-card .notes {
+    color: var(--gray);
+    font-size: 0.875rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+/* Stats / Chart */
+.chart-container {
+    background: rgba(79, 93, 117, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--slate-blue);
+    margin-bottom: 1.5rem;
+}
+
+.chart-container h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-container canvas {
+    max-height: 400px;
+}
+
+/* Season Stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-card {
+    background: rgba(79, 93, 117, 0.3);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--slate-blue);
+    text-align: center;
+}
+
+.stat-card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--orange);
+}
+
+.stat-card .label {
+    font-size: 0.875rem;
+    color: var(--gray);
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--slate-blue);
+    color: var(--gray);
+    font-size: 0.875rem;
+}
+
+.footer .logo-small {
+    max-width: 100px;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.footer .refresh {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--slate-blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.footer .refresh:hover {
+    color: var(--orange);
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+.race-card,
+.award-card,
+.stat-card,
+.next-race-card,
+.chart-container {
+    background: var(--white);
+    border-radius: 0.75rem;
+    border: none;
+    box-shadow: 0 8px 24px rgba(45, 49, 66, 0.08);
+}
+
+/* Position colors */
+.pos-1 { color: #FFD700; }
+.pos-2 { color: var(--gray); }
+.pos-3 { color: #CD7F32; }
