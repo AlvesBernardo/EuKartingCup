@@ -574,3 +574,28 @@ body {
 .pos-1 { color: #FFD700; }
 .pos-2 { color: var(--gray); }
 .pos-3 { color: #CD7F32; }
+
+
+/* Mobile stats clarity */
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+    }
+
+    .stat-card .icon {
+        font-size: 1.5rem;
+    }
+
+    .stat-card .value {
+        font-size: 1.25rem;
+    }
+
+    .stat-card .label {
+        font-size: 0.75rem;
+    }
+}
