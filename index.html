@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏁 Karting Legends League</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .podium-1 { animation: bounce 2s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .trend-up { color: #22c55e; }
+        .trend-down { color: #ef4444; }
+        .loading { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4">
+
+<!-- CONFIGURATION - UPDATE THIS -->
+<script>
+    // Replace with your Google Sheet ID (the long string in the URL)
+    // Example: https://docs.google.com/spreadsheets/d/ABC123XYZ/edit → ABC123XYZ
+    const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+
+    // Sheet names (tabs at bottom of Google Sheet)
+    const DRIVERS_SHEET = 'Drivers';
+    const RACES_SHEET = 'Races';
+    const TRASHTALK_SHEET = 'TrashTalk';
+</script>
+
+<div id="app">
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-black bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 bg-clip-text text-transparent mb-2">
+            🏁 KARTING LEGENDS LEAGUE 🏁
+        </h1>
+        <p class="text-gray-400">Where friendships go to die on the track</p>
+        <div id="nextRace" class="mt-4 inline-flex items-center gap-2 bg-red-600/20 border border-red-500/50 rounded-full px-6 py-2">
+            <span class="text-red-400 font-semibold">Loading next race...</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex flex-wrap justify-center gap-2 mb-6">
+        <button onclick="showTab('standings')" id="tab-standings" class="tab-btn active flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-red-600">
+            🏆 Standings
+        </button>
+        <button onclick="showTab('races')" id="tab-races" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
+            🏎️ Races
+        </button>
+        <button onclick="showTab('awards')" id="tab-awards" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
+            🥇 Awards
+        </button>
+        <button onclick="showTab('trash')" id="tab-trash" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gray-700/50 hover:bg-gray-700">
+            🗑️ Trash Talk
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center py-12">
+        <div class="text-4xl mb-4 loading">🏎️</div>
+        <p class="text-gray-400">Loading data from Google Sheets...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="hidden text-center py-12">
+        <div class="text-4xl mb-4">⚠️</div>
+        <p class="text-red-400 mb-2">Couldn't load data from Google Sheets</p>
+        <p class="text-gray-500 text-sm">Make sure you've updated the SHEET_ID and published the sheet</p>
+    </div>
+
+    <!-- Standings Tab -->
+    <div id="content-standings" class="tab-content hidden max-w-4xl mx-auto">
+        <!-- Podium -->
+        <div id="podium" class="flex justify-center items-end gap-4 mb-8 h-48"></div>
+
+        <!-- Standings Table -->
+        <div class="bg-gray-800/50 rounded-xl overflow-hidden border border-gray-700">
+            <div class="grid grid-cols-12 gap-2 p-3 bg-gray-700/50 text-sm font-semibold text-gray-400">
+                <div class="col-span-1">#</div>
+                <div class="col-span-5">Driver</div>
+                <div class="col-span-2 text-center">Points</div>
+                <div class="col-span-2 text-center">Wins</div>
+                <div class="col-span-2 text-center">Podiums</div>
+            </div>
+            <div id="standings-list"></div>
+        </div>
+    </div>
+
+    <!-- Races Tab -->
+    <div id="content-races" class="tab-content hidden max-w-4xl mx-auto">
+        <div id="races-list" class="space-y-4"></div>
+    </div>
+
+    <!-- Awards Tab -->
+    <div id="content-awards" class="tab-content hidden max-w-4xl mx-auto">
+        <div id="awards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- Trash Talk Tab -->
+    <div id="content-trash" class="tab-content hidden max-w-2xl mx-auto">
+        <p class="text-center text-gray-400 mb-4">Add trash talk in the Google Sheet's "TrashTalk" tab!</p>
+        <div id="trash-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-12 text-gray-500 text-sm">
+        <p>🏎️ May the fastest friend win (and the slowest buy drinks) 🍺</p>
+        <button onclick="loadAllData()" class="mt-2 text-xs text-gray-600 hover:text-gray-400">↻ Refresh Data</button>
+    </div>
+</div>
+
+<script>
+    // Data storage
+    let drivers = [];
+    let races = [];
+    let trashTalk = [];
+
+    // Fetch CSV from Google Sheets
+    async function fetchSheet(sheetName) {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch');
+        const text = await response.text();
+        return parseCSV(text);
+    }
+
+    // Parse CSV to array of objects
+    function parseCSV(csv) {
+        const lines = csv.split('\n').filter(line => line.trim());
+        if (lines.length < 2) return [];
+
+        const headers = parseCSVLine(lines[0]);
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = parseCSVLine(lines[i]);
+            const obj = {};
+            headers.forEach((header, idx) => {
+                let val = values[idx] || '';
+                // Try to convert to number if it looks like one
+                if (/^-?\d+\.?\d*$/.test(val)) {
+                    val = parseFloat(val);
+                }
+                obj[header.trim()] = val;
+            });
+            data.push(obj);
+        }
+        return data;
+    }
+
+    // Parse a single CSV line (handles quoted values)
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
+
+    // Load all data
+    async function loadAllData() {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('error').classList.add('hidden');
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+        try {
+            // Load drivers
+            drivers = await fetchSheet(DRIVERS_SHEET);
+            drivers.sort((a, b) => (b.Points || 0) - (a.Points || 0));
+
+            // Try to load races (optional)
+            try {
+                races = await fetchSheet(RACES_SHEET);
+            } catch (e) {
+                races = [];
+            }
+
+            // Try to load trash talk (optional)
+            try {
+                trashTalk = await fetchSheet(TRASHTALK_SHEET);
+            } catch (e) {
+                trashTalk = [];
+            }
+
+            document.getElementById('loading').classList.add('hidden');
+            renderAll();
+            showTab('standings');
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+        }
+    }
+
+    // Render all sections
+    function renderAll() {
+        renderPodium();
+        renderStandings();
+        renderRaces();
+        renderAwards();
+        renderTrashTalk();
+    }
+
+    // Render podium
+    function renderPodium() {
+        const podium = document.getElementById('podium');
+        if (drivers.length < 3) {
+            podium.innerHTML = '<p class="text-gray-400">Need at least 3 drivers for podium</p>';
+            return;
+        }
+
+        const positions = [
+            { driver: drivers[1], height: 'h-32', pos: '2nd', bg: 'bg-gray-400' },
+            { driver: drivers[0], height: 'h-40', pos: '1st', bg: 'bg-yellow-500', animate: 'podium-1' },
+            { driver: drivers[2], height: 'h-24', pos: '3rd', bg: 'bg-amber-700' },
+        ];
+
+        podium.innerHTML = positions.map(p => `
+        <div class="text-center ${p.animate || ''}">
+          <div class="text-4xl mb-2">${p.driver.Emoji || '🏎️'}</div>
+          <div class="${p.height} w-24 ${p.bg} rounded-t-lg flex flex-col items-center justify-end pb-2">
+            <span class="text-2xl font-black text-gray-900">${p.pos}</span>
+            <span class="text-sm font-bold text-gray-900 truncate w-20">${p.driver.Name || 'Unknown'}</span>
+            <span class="text-xs text-gray-800">${p.driver.Points || 0} pts</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render standings
+    function renderStandings() {
+        const list = document.getElementById('standings-list');
+        const colors = ['#e11d48', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#64748b'];
+
+        list.innerHTML = drivers.map((d, idx) => `
+        <div class="grid grid-cols-12 gap-2 p-3 items-center hover:bg-gray-700/30 border-b border-gray-700/50">
+          <div class="col-span-1 font-bold" style="color: ${colors[idx % colors.length]}">${idx + 1}</div>
+          <div class="col-span-5 flex items-center gap-2">
+            <span class="text-xl">${d.Emoji || '🏎️'}</span>
+            <div>
+              <div class="font-semibold">${d.Name || 'Unknown'}</div>
+              ${d.Nickname ? `<div class="text-xs text-gray-500">"${d.Nickname}"</div>` : ''}
+            </div>
+          </div>
+          <div class="col-span-2 text-center font-bold text-lg">${d.Points || 0}</div>
+          <div class="col-span-2 text-center">${d.Wins || 0}</div>
+          <div class="col-span-2 text-center">${d.Podiums || 0}</div>
+        </div>
+      `).join('');
+    }
+
+    // Render races
+    function renderRaces() {
+        const list = document.getElementById('races-list');
+
+        if (races.length === 0) {
+            list.innerHTML = '<p class="text-center text-gray-400">No races yet. Add them in the "Races" sheet!</p>';
+            return;
+        }
+
+        list.innerHTML = races.map(race => `
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-bold">${race.RaceName || 'Race'}</h3>
+            <span class="text-sm text-gray-400">${race.Date || ''}</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🥇</span>
+              <span class="font-semibold">${race.P1 || '-'}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🥈</span>
+              <span>${race.P2 || '-'}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🥉</span>
+              <span>${race.P3 || '-'}</span>
+            </div>
+            ${race.FastestLap ? `
+              <div class="ml-auto flex items-center gap-2 text-purple-400">
+                <span>⚡</span>
+                <span class="text-sm">${race.FastestLap}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render awards
+    function renderAwards() {
+        const list = document.getElementById('awards-list');
+
+        // Calculate awards from data
+        const awards = [];
+
+        if (drivers.length > 0) {
+            // Most wins
+            const mostWins = [...drivers].sort((a, b) => (b.Wins || 0) - (a.Wins || 0))[0];
+            if (mostWins.Wins > 0) {
+                awards.push({ title: 'Race Winner', desc: 'Most Wins', winner: mostWins.Name, emoji: '🏆', color: '#eab308' });
+            }
+
+            // Most podiums
+            const mostPodiums = [...drivers].sort((a, b) => (b.Podiums || 0) - (a.Podiums || 0))[0];
+            if (mostPodiums.Podiums > 0) {
+                awards.push({ title: 'Podium King', desc: 'Most Podiums', winner: mostPodiums.Name, emoji: '🎖️', color: '#f97316' });
+            }
+
+            // Most fastest laps
+            const mostFL = [...drivers].sort((a, b) => (b.FastestLaps || 0) - (a.FastestLaps || 0))[0];
+            if (mostFL.FastestLaps > 0) {
+                awards.push({ title: 'Speed Demon', desc: 'Most Fastest Laps', winner: mostFL.Name, emoji: '⚡', color: '#8b5cf6' });
+            }
+
+            // Most DNFs (if tracked)
+            const mostDNF = [...drivers].sort((a, b) => (b.DNFs || 0) - (a.DNFs || 0))[0];
+            if (mostDNF.DNFs > 0) {
+                awards.push({ title: 'Crash King', desc: 'Most DNFs', winner: mostDNF.Name, emoji: '💥', color: '#ef4444' });
+            }
+
+            // Points leader
+            awards.push({ title: 'Championship Leader', desc: 'Most Points', winner: drivers[0].Name, emoji: '👑', color: '#22c55e' });
+        }
+
+        if (awards.length === 0) {
+            list.innerHTML = '<p class="text-center text-gray-400 col-span-3">Awards will appear as you add race data!</p>';
+            return;
+        }
+
+        list.innerHTML = awards.map(award => `
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center transform hover:scale-105 transition-transform">
+          <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
+               style="background-color: ${award.color}20; border: 2px solid ${award.color}">
+            ${award.emoji}
+          </div>
+          <h3 class="text-lg font-bold mb-1">${award.title}</h3>
+          <p class="text-sm text-gray-400 mb-3">${award.desc}</p>
+          <div class="inline-flex items-center gap-2 bg-gray-700/50 rounded-full px-4 py-2">
+            <span>👑</span>
+            <span class="font-semibold">${award.winner}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render trash talk
+    function renderTrashTalk() {
+        const list = document.getElementById('trash-list');
+
+        if (trashTalk.length === 0) {
+            list.innerHTML = '<p class="text-center text-gray-400">No trash talk yet. Add some in the Google Sheet!</p>';
+            return;
+        }
+
+        list.innerHTML = trashTalk.map(msg => `
+        <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-red-400">${msg.Author || 'Anonymous'}</span>
+            <span class="text-xs text-gray-500">${msg.Date || ''}</span>
+          </div>
+          <p class="text-gray-300">${msg.Message || ''}</p>
+        </div>
+      `).join('');
+    }
+
+    // Tab switching
+    function showTab(tabName) {
+        // Hide all content
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+        // Deactivate all tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('bg-red-600');
+            btn.classList.add('bg-gray-700/50');
+        });
+
+        // Show selected content
+        document.getElementById(`content-${tabName}`).classList.remove('hidden');
+
+        // Activate selected tab
+        document.getElementById(`tab-${tabName}`).classList.remove('bg-gray-700/50');
+        document.getElementById(`tab-${tabName}`).classList.add('bg-red-600');
+    }
+
+    // Initialize
+    loadAllData();
+</script>
+</body>
+</html>
